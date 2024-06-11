@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "NetToBallLine.h"
 
-/* Plugin Settings Window code here
 std::string NetToBallLine::GetPluginName() {
 	return "NetToBallLine";
 }
@@ -14,11 +13,19 @@ void NetToBallLine::SetImGuiContext(uintptr_t ctx) {
 // This will show up in bakkesmod when the plugin is loaded at
 //  f2 -> plugins -> NetToBallLine
 void NetToBallLine::RenderSettings() {
-	ImGui::TextUnformatted("NetToBallLine plugin settings");
-}
-*/
+	ImGui::TextUnformatted("Net To Ball Line - This is an assist line to help with shooting training.");
+	
+	// Render the toggle button
+	if (ImGui::Checkbox("Enable NetToBallLine", enabled.get())) {
+		// The state is automatically managed by the shared pointer
+		cvarManager->getCvar("net_to_ball_line_enabled").setValue(*enabled);
+	}
 
-/*
+
+}
+
+
+
 // Do ImGui rendering here
 void NetToBallLine::Render()
 {
@@ -50,10 +57,11 @@ std::string NetToBallLine::GetMenuTitle()
 }
 
 // Don't call this yourself, BM will call this function with a pointer to the current ImGui context
-void NetToBallLine::SetImGuiContext(uintptr_t ctx)
-{
-	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
-}
+// this was a dupped piece of code?
+//void NetToBallLine::SetImGuiContext(uintptr_t ctx)
+//{
+//	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
+//}
 
 // Should events such as mouse clicks/key inputs be blocked so they won't reach the game
 bool NetToBallLine::ShouldBlockInput()
@@ -78,4 +86,4 @@ void NetToBallLine::OnClose()
 {
 	isWindowOpen_ = false;
 }
-*/
+

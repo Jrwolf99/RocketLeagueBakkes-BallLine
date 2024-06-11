@@ -8,24 +8,25 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 
-class NetToBallLine: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*//*, public BakkesMod::Plugin::PluginWindow*/
+class NetToBallLine: public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow, public BakkesMod::Plugin::PluginWindow
 {
 
-	//std::shared_ptr<bool> enabled;
+	std::shared_ptr<bool> enabled;
+
 
 	//Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
 
 	// Inherited via PluginSettingsWindow
-	/*
+	
 	void RenderSettings() override;
 	std::string GetPluginName() override;
 	void SetImGuiContext(uintptr_t ctx) override;
-	*/
+	
 
 	// Inherited via PluginWindow
-	/*
+	
 
 	bool isWindowOpen_ = false;
 	bool isMinimized_ = false;
@@ -34,12 +35,15 @@ class NetToBallLine: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesM
 	virtual void Render() override;
 	virtual std::string GetMenuName() override;
 	virtual std::string GetMenuTitle() override;
-	virtual void SetImGuiContext(uintptr_t ctx) override;
+	//virtual void SetImGuiContext(uintptr_t ctx) override;
 	virtual bool ShouldBlockInput() override;
 	virtual bool IsActiveOverlay() override;
 	virtual void OnOpen() override;
 	virtual void OnClose() override;
+
+	void RenderLine(CanvasWrapper canvas);
+	Vector GetNetLocation(ServerWrapper game);
 	
-	*/
+	
 };
 
