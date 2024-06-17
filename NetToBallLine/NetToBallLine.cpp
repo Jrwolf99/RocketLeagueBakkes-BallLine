@@ -1,32 +1,222 @@
+#include <random>
+
 #include "pch.h"
 #include "NetToBallLine.h"
+#include "bakkesmod/wrappers/canvaswrapper.h"
+#include "bakkesmod/wrappers/arraywrapper.h"
 
 BAKKESMOD_PLUGIN(NetToBallLine, "This is a simple plugin that draws a line from the net to the ball to assist in shooting practice", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
+bool NetToBallLine::isBallColliding(const Vector &point, const Vector &topLeft, const Vector &bottomRight)
+{
+    // the extra margin is there so that the ball doesn't have to be exactly at the goal to count as a goal
+    bool is_collided = point.X <= topLeft.X + 50 && point.X >= bottomRight.X - 50 &&
+                       point.Z <= topLeft.Z + 50 && point.Z >= bottomRight.Z - 50 &&
+                       point.Y <= topLeft.Y + 50 && point.Y >= bottomRight.Y - 50;
+
+    if (!is_collided)
+    {
+        previous_collision = false;
+    }
+
+    return is_collided;
+}
+
+void NetToBallLine::StartTimer()
+{
+    startTime = std::chrono::steady_clock::now(); // Record the start time
+    timerIsRunning = true;
+}
+
+void NetToBallLine::StopTimer()
+{
+
+    timerIsRunning = false;
+    startTime = std::chrono::steady_clock::now();
+}
+
+void NetToBallLine::ScoreGoal(CanvasWrapper &canvas)
+{
+
+    LinearColor colors;
+    colors.R = 0;
+    colors.G = 255;
+    colors.B = 0;
+    colors.A = 255;
+    canvas.SetColor(colors);
+
+    if (previous_collision)
+        return;
+
+    goalCount++;
+    previous_collision = true;
+    std::mt19937 gen(std::random_device{}());
+    std::uniform_int_distribution<int> dist(1, 4);
+
+    if (dist(gen) == deciding_quadrant)
+    {
+        std::uniform_int_distribution<int> dist_second(1, 4);
+        deciding_quadrant = dist_second(gen);
+    }
+    else
+    {
+        deciding_quadrant = dist(gen);
+    }
+}
+
+bool NetToBallLine::IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize)
+{
+    if (screenLocation.X < 0 || screenLocation.X > canvasSize.X || screenLocation.Y < 0 || screenLocation.Y > canvasSize.Y)
+        return false;
+    return true;
+}
+
 void NetToBallLine::onLoad()
 {
     _globalCvarManager = cvarManager;
-    cvarManager->log("Plugin loaded!!!!!!!!!!!!");
+    cvarManager->log("Plugin loaded!");
 
-    enabled = std::make_shared<bool>(false);
-    cvarManager->registerCvar("net_to_ball_line_enabled", "0", "Enable NetToBallLine plugin")
-        .bindTo(enabled);
+    shoot_enabled = std::make_shared<bool>(false);
 
-    gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
-        if (*enabled)
-            RenderLine(canvas);
-        });
+    cvarManager->registerCvar("shooting_enabled", "0", "Enable shooting practice")
+        .bindTo(shoot_enabled);
+
+    gameWrapper->RegisterDrawable([this](CanvasWrapper canvas)
+                                  {
+        if (*shoot_enabled)
+        {
+            renderShootingGame(canvas);
+        } });
 }
 
 void NetToBallLine::onUnload()
 {
 }
 
-void NetToBallLine::RenderLine(CanvasWrapper canvas) {
-    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
+void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
+{
+
+    Vector topLeft(880, 5120, 600);
+
+    Vector topRight(-880, 5120, 600);
+
+    Vector bottomRight(-880, 5120, 0);
+
+    Vector bottomLeft(880, 5120, 0);
+
+    Vector midLeft(880, 5120, 300);
+
+    Vector midRight(-880, 5120, 300);
+
+    Vector midTop(0, 5120, 600);
+
+    Vector midBottom(0, 5120, 0);
+
+    Vector midMid(0, 5120, 300);
+
+    // defines colors in RGBA 0-255
+    LinearColor colors;
+    colors.R = 255;
+    colors.G = 255;
+    colors.B = 0;
+    colors.A = 255;
+    canvas.SetColor(colors);
+
+    // Project points to 2D
+    Vector2 p1 = canvas.Project(topLeft);
+    Vector2 p2 = canvas.Project(topRight);
+    Vector2 p3 = canvas.Project(bottomRight);
+    Vector2 p4 = canvas.Project(bottomLeft);
+    Vector2 p5 = canvas.Project(midLeft);
+    Vector2 p6 = canvas.Project(midRight);
+    Vector2 p7 = canvas.Project(midTop);
+    Vector2 p8 = canvas.Project(midBottom);
+    Vector2 p9 = canvas.Project(midMid);
+
+    const float lineWidth = 3;
+
+    Vector ballLocation = gameWrapper->GetGameEventAsServer().GetBall().GetLocation();
+
+    switch (quadrant)
+    {
+    case 1:
+        if (isBallColliding(ballLocation, topLeft, midMid))
+        {
+            ScoreGoal(canvas);
+        }
+        break;
+    case 2:
+
+        if (isBallColliding(ballLocation, midTop, midRight))
+        {
+            ScoreGoal(canvas);
+        }
+        break;
+    case 3:
+
+        if (isBallColliding(ballLocation, midMid, bottomRight))
+        {
+            ScoreGoal(canvas);
+        }
+        break;
+    case 4:
+        if (isBallColliding(ballLocation, midLeft, midBottom))
+
+        {
+            ScoreGoal(canvas);
+        }
+        break;
+    }
+
+    if (!IsInScreenLocation(p1, canvas.GetSize()) ||
+        !IsInScreenLocation(p2, canvas.GetSize()) ||
+        !IsInScreenLocation(p3, canvas.GetSize()) ||
+        !IsInScreenLocation(p4, canvas.GetSize()) ||
+        !IsInScreenLocation(p5, canvas.GetSize()) ||
+        !IsInScreenLocation(p6, canvas.GetSize()) ||
+        !IsInScreenLocation(p7, canvas.GetSize()) ||
+        !IsInScreenLocation(p8, canvas.GetSize()) ||
+        !IsInScreenLocation(p9, canvas.GetSize()))
         return;
+
+    switch (quadrant)
+    {
+    case 1:
+        canvas.DrawLine(p1, p5, lineWidth);
+        canvas.DrawLine(p5, p9, lineWidth);
+        canvas.DrawLine(p9, p7, lineWidth);
+        canvas.DrawLine(p7, p1, lineWidth);
+        break;
+    case 2:
+        canvas.DrawLine(p7, p9, lineWidth);
+        canvas.DrawLine(p9, p6, lineWidth);
+        canvas.DrawLine(p6, p2, lineWidth);
+        canvas.DrawLine(p2, p7, lineWidth);
+        break;
+    case 3:
+        canvas.DrawLine(p9, p6, lineWidth);
+        canvas.DrawLine(p6, p3, lineWidth);
+        canvas.DrawLine(p3, p8, lineWidth);
+        canvas.DrawLine(p8, p9, lineWidth);
+        break;
+    case 4:
+        canvas.DrawLine(p5, p9, lineWidth);
+        canvas.DrawLine(p9, p8, lineWidth);
+        canvas.DrawLine(p8, p4, lineWidth);
+        canvas.DrawLine(p4, p5, lineWidth);
+        break;
+    }
+}
+
+void NetToBallLine::renderShootingGame(CanvasWrapper canvas)
+{
+    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
+    {
+        NetToBallLine::StopTimer();
+        return;
+    }
 
     ServerWrapper game = gameWrapper->GetGameEventAsServer();
     if (game.IsNull())
@@ -36,104 +226,29 @@ void NetToBallLine::RenderLine(CanvasWrapper canvas) {
     if (ball.IsNull())
         return;
 
+    handleGameUI(canvas);
 
-
-    Vector ballLocation = ball.GetLocation();
-    float ballRadius = ball.GetRadius();
-
-
-    // Project the ball's location to screen coordinates
-    Vector2 canvasSize = canvas.GetSize();
-    Vector2 screenLocation = canvas.Project(ballLocation);
-
-    // Check if the ball is within the screen boundaries
-    if (screenLocation.X < 0 || screenLocation.X > canvasSize.X || screenLocation.Y < 0 || screenLocation.Y > canvasSize.Y)
-        return;
-
-    Vector netLocation = GetNetLocation(game);
-
-    // Calculate the direction from the ball to the net and normalize it
-    Vector direction = netLocation - ballLocation;
-    float magnitude = sqrt(direction.X * direction.X + direction.Y * direction.Y + direction.Z * direction.Z);
-
-    if (magnitude != 0) {
-        direction.X /= magnitude;
-        direction.Y /= magnitude;
-        direction.Z /= magnitude;
-    }
-
-    // Calculate the entry and exit points on the ball
-    Vector entryPoint = ballLocation + direction * 10 * ballRadius;
-    Vector exitPoint = ballLocation - direction * ballRadius;
-
-    LinearColor color;
-    color.R = 0;
-    color.G = 255;
-    color.B = 0;
-    color.A = 255;
-    canvas.SetColor(color);
-
-    // Draw the line from the ball location to the entry point (before the ball)
-    canvas.DrawLine(canvas.Project(netLocation), canvas.Project(entryPoint));
-
-    // Render the ball here if possible
-
-    // Draw the green cross at the exit point
-    LinearColor colorTwo;
-    colorTwo.R = 0;
-    colorTwo.G = 255;
-    colorTwo.B = 0;
-    colorTwo.A = 255;
-    canvas.SetColor(colorTwo);
-
-    // Draw 200 lines in a vertical cross pattern at the exit point
-    for (int i = 0; i < 200; ++i) {
-        float angle = i * (360.0f / 200.0f);
-        float radian = angle * (3.14159f / 180.0f);
-        float length = 5.0f; // Length of each line in the cross
-
-        // Lines in the XZ plane
-        Vector lineEndXZ;
-        lineEndXZ.X = exitPoint.X + cos(radian) * length;
-        lineEndXZ.Y = exitPoint.Y;
-        lineEndXZ.Z = exitPoint.Z + sin(radian) * length;
-
-        canvas.DrawLine(canvas.Project(exitPoint), canvas.Project(lineEndXZ));
-
-        // Lines in the YZ plane
-        Vector lineEndYZ;
-        lineEndYZ.X = exitPoint.X;
-        lineEndYZ.Y = exitPoint.Y + cos(radian) * length;
-        lineEndYZ.Z = exitPoint.Z + sin(radian) * length;
-
-        canvas.DrawLine(canvas.Project(exitPoint), canvas.Project(lineEndYZ));
-    }
+    DrawGoals(canvas, deciding_quadrant);
 }
 
-Vector NetToBallLine::GetNetLocation(ServerWrapper game) {
-    // Assuming we are drawing to the center of the blue goal and the center of the orange goal.
-    // The locations should be adjusted based on the specific map and goal dimensions.
-    // Here is a rough approximation for most maps:
-    Vector blueGoalLocation = Vector(0, -5120, 200);  // Center of the blue goal
-    Vector orangeGoalLocation = Vector(0, 5120, 200); // Center of the orange goal
+void NetToBallLine::handleGameUI(CanvasWrapper canvas)
+{
+    float elapsedTime = 0.0f;
 
-    // Get the ball location
+    if (timerIsRunning)
+    {
+        auto now = std::chrono::steady_clock::now();
+        elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
+    }
 
-    BallWrapper ball = game.GetBall();
+    canvas.SetColor(255, 255, 0, 255);
 
-    Vector ballLocation = ball.GetLocation();
-
-
-    // Get your car location
-    CarWrapper car = game.GetGameCar();
-    Vector carLocation = car.GetLocation();
-
-    // Determine if you are behind the ball relative to the goals
-    // Assuming "behind" means closer to your own goal (blue goal)
-    bool isBehindBall = (carLocation.Y > ballLocation.Y);
-
-    // Return the appropriate goal location
-    Vector netLocation = isBehindBall ? blueGoalLocation : orangeGoalLocation;
-    return netLocation;
+    int elapsedTimeInt = static_cast<int>(elapsedTime);
+    int minutes = elapsedTimeInt / 60;
+    int seconds = elapsedTimeInt % 60;
+    std::string timerText = "Timer: " + std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
+    canvas.SetPosition(Vector2{1650, 400});
+    canvas.DrawString(timerText, 2, 2);
+    canvas.SetPosition(Vector2{1650, 450});
+    canvas.DrawString("Goals: " + std::to_string(goalCount), 2, 2);
 }
-

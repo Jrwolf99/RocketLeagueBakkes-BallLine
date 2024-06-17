@@ -1,30 +1,33 @@
 #include "pch.h"
 #include "NetToBallLine.h"
 
-std::string NetToBallLine::GetPluginName() {
+std::string NetToBallLine::GetPluginName()
+{
 	return "NetToBallLine";
 }
 
-void NetToBallLine::SetImGuiContext(uintptr_t ctx) {
-	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
+void NetToBallLine::SetImGuiContext(uintptr_t ctx)
+{
+	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext *>(ctx));
 }
 
-// Render the plugin settings here
-// This will show up in bakkesmod when the plugin is loaded at
-//  f2 -> plugins -> NetToBallLine
-void NetToBallLine::RenderSettings() {
-	ImGui::TextUnformatted("Net To Ball Line - This is an assist line to help with shooting training.");
-	
-	// Render the toggle button
-	if (ImGui::Checkbox("Enable NetToBallLine", enabled.get())) {
-		// The state is automatically managed by the shared pointer
-		cvarManager->getCvar("net_to_ball_line_enabled").setValue(*enabled);
+void NetToBallLine::RenderSettings()
+{
+	ImGui::TextUnformatted("Shooting Practice:");
+
+	if (ImGui::Checkbox("Enable Shooting Practice", shoot_enabled.get()))
+	{
+		cvarManager->getCvar("shooting_enabled").setValue(*shoot_enabled);
+		if (*shoot_enabled)
+		{
+			NetToBallLine::StartTimer();
+		}
+		else
+		{
+			NetToBallLine::StopTimer();
+		}
 	}
-
-
 }
-
-
 
 // Do ImGui rendering here
 void NetToBallLine::Render()
@@ -58,7 +61,7 @@ std::string NetToBallLine::GetMenuTitle()
 
 // Don't call this yourself, BM will call this function with a pointer to the current ImGui context
 // this was a dupped piece of code?
-//void NetToBallLine::SetImGuiContext(uintptr_t ctx)
+// void NetToBallLine::SetImGuiContext(uintptr_t ctx)
 //{
 //	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
 //}
@@ -86,4 +89,3 @@ void NetToBallLine::OnClose()
 {
 	isWindowOpen_ = false;
 }
-
