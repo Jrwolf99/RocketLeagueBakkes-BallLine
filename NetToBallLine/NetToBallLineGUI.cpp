@@ -25,6 +25,7 @@ void NetToBallLine::RenderSettings()
 		else
 		{
 			NetToBallLine::StopTimer();
+			goalCount = 0;
 		}
 	}
 }

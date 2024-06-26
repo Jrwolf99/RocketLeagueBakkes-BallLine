@@ -44,8 +44,9 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 	void StopTimer();
 	void ScoreGoal(CanvasWrapper &canvas);
 	bool IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize);
-	void renderShootingGame(CanvasWrapper canvas);
+	void RenderShootingGame(CanvasWrapper canvas);
 	void DrawGoals(CanvasWrapper &canvas, int quadrant);
-	void handleGameUI(CanvasWrapper canvas);
-	bool isBallColliding(const Vector& point, const Vector& topLeft, const Vector& bottomRight);
+	void HandleGameUI(CanvasWrapper canvas);
+	bool IsBallColliding(const Vector& point, const Vector& topLeft, const Vector& bottomRight);
+    void DrawNetLine(Vector2 &p1, Vector2 &p2, CanvasWrapper &canvas);
 };

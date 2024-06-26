@@ -4,12 +4,13 @@
 #include "NetToBallLine.h"
 #include "bakkesmod/wrappers/canvaswrapper.h"
 #include "bakkesmod/wrappers/arraywrapper.h"
+#include "CinderBloccRenderingTools/Objects/Line.h"
 
 BAKKESMOD_PLUGIN(NetToBallLine, "This is a simple plugin that draws a line from the net to the ball to assist in shooting practice", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-bool NetToBallLine::isBallColliding(const Vector &point, const Vector &topLeft, const Vector &bottomRight)
+bool NetToBallLine::IsBallColliding(const Vector &point, const Vector &topLeft, const Vector &bottomRight)
 {
     // the extra margin is there so that the ball doesn't have to be exactly at the goal to count as a goal
     bool is_collided = point.X <= topLeft.X + 50 && point.X >= bottomRight.X - 50 &&
@@ -68,8 +69,20 @@ void NetToBallLine::ScoreGoal(CanvasWrapper &canvas)
 
 bool NetToBallLine::IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize)
 {
+
     if (screenLocation.X < 0 || screenLocation.X > canvasSize.X || screenLocation.Y < 0 || screenLocation.Y > canvasSize.Y)
+    {
+        cvarManager->log("    ");
+        cvarManager->log("screenLocation: " + std::to_string(screenLocation.X) + " " + std::to_string(screenLocation.Y));
+        cvarManager->log("screenLocation.X < 0: " + std::to_string(screenLocation.X < 0));
+        cvarManager->log("screenLocation.X > canvasSize.X: " + std::to_string(screenLocation.X > canvasSize.X));
+        cvarManager->log("screenLocation.Y < 0: " + std::to_string(screenLocation.Y < 0));
+        cvarManager->log("screenLocation.Y > canvasSize.Y: " + std::to_string(screenLocation.Y > canvasSize.Y));
+
+        cvarManager->log("Canvas Size: " + std::to_string(canvasSize.X) + " " + std::to_string(canvasSize.Y));
+        cvarManager->log("    ");
         return false;
+    }
     return true;
 }
 
@@ -87,7 +100,7 @@ void NetToBallLine::onLoad()
                                   {
         if (*shoot_enabled)
         {
-            renderShootingGame(canvas);
+            RenderShootingGame(canvas);
         } });
 }
 
@@ -97,6 +110,12 @@ void NetToBallLine::onUnload()
 
 void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
 {
+
+    // RT::Vector topLefttt(880, 5120, 600);
+    // RT::Vector topRighttt(-880, 5120, 600);
+
+    // Creating a line with thickness 3.0 using the specified vectors
+    // RT::Line thickLine(topLefttt, topRighttt, 10.0f);
 
     Vector topLeft(880, 5120, 600);
 
@@ -116,14 +135,6 @@ void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
 
     Vector midMid(0, 5120, 300);
 
-    // defines colors in RGBA 0-255
-    LinearColor colors;
-    colors.R = 255;
-    colors.G = 255;
-    colors.B = 0;
-    colors.A = 255;
-    canvas.SetColor(colors);
-
     // Project points to 2D
     Vector2 p1 = canvas.Project(topLeft);
     Vector2 p2 = canvas.Project(topRight);
@@ -142,79 +153,89 @@ void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
     switch (quadrant)
     {
     case 1:
-        if (isBallColliding(ballLocation, topLeft, midMid))
+        if (IsBallColliding(ballLocation, topLeft, midMid))
         {
             ScoreGoal(canvas);
         }
         break;
     case 2:
 
-        if (isBallColliding(ballLocation, midTop, midRight))
+        if (IsBallColliding(ballLocation, midTop, midRight))
         {
             ScoreGoal(canvas);
         }
         break;
     case 3:
 
-        if (isBallColliding(ballLocation, midMid, bottomRight))
+        if (IsBallColliding(ballLocation, midMid, bottomRight))
         {
             ScoreGoal(canvas);
         }
         break;
     case 4:
-        if (isBallColliding(ballLocation, midLeft, midBottom))
+        if (IsBallColliding(ballLocation, midLeft, midBottom))
 
         {
             ScoreGoal(canvas);
         }
         break;
     }
-
-    if (!IsInScreenLocation(p1, canvas.GetSize()) ||
-        !IsInScreenLocation(p2, canvas.GetSize()) ||
-        !IsInScreenLocation(p3, canvas.GetSize()) ||
-        !IsInScreenLocation(p4, canvas.GetSize()) ||
-        !IsInScreenLocation(p5, canvas.GetSize()) ||
-        !IsInScreenLocation(p6, canvas.GetSize()) ||
-        !IsInScreenLocation(p7, canvas.GetSize()) ||
-        !IsInScreenLocation(p8, canvas.GetSize()) ||
-        !IsInScreenLocation(p9, canvas.GetSize()))
-        return;
 
     switch (quadrant)
     {
     case 1:
-        canvas.DrawLine(p1, p5, lineWidth);
-        canvas.DrawLine(p5, p9, lineWidth);
-        canvas.DrawLine(p9, p7, lineWidth);
-        canvas.DrawLine(p7, p1, lineWidth);
+        if (!IsInScreenLocation(p1, canvas.GetSize()) ||
+            !IsInScreenLocation(p5, canvas.GetSize()) ||
+            !IsInScreenLocation(p9, canvas.GetSize()) ||
+            !IsInScreenLocation(p7, canvas.GetSize()))
+            return;
+        DrawNetLine(p1, p5, canvas);
+        DrawNetLine(p5, p9, canvas);
+        DrawNetLine(p9, p7, canvas);
+        DrawNetLine(p7, p1, canvas);
         break;
     case 2:
-        canvas.DrawLine(p7, p9, lineWidth);
-        canvas.DrawLine(p9, p6, lineWidth);
-        canvas.DrawLine(p6, p2, lineWidth);
-        canvas.DrawLine(p2, p7, lineWidth);
+        if (!IsInScreenLocation(p7, canvas.GetSize()) ||
+            !IsInScreenLocation(p9, canvas.GetSize()) ||
+            !IsInScreenLocation(p6, canvas.GetSize()) ||
+            !IsInScreenLocation(p2, canvas.GetSize()))
+            return;
+        DrawNetLine(p7, p9, canvas);
+        DrawNetLine(p9, p6, canvas);
+        DrawNetLine(p6, p2, canvas);
+        DrawNetLine(p2, p7, canvas);
         break;
     case 3:
-        canvas.DrawLine(p9, p6, lineWidth);
-        canvas.DrawLine(p6, p3, lineWidth);
-        canvas.DrawLine(p3, p8, lineWidth);
-        canvas.DrawLine(p8, p9, lineWidth);
+        if (!IsInScreenLocation(p9, canvas.GetSize()) ||
+            !IsInScreenLocation(p8, canvas.GetSize()) ||
+            !IsInScreenLocation(p3, canvas.GetSize()) ||
+            !IsInScreenLocation(p6, canvas.GetSize()))
+            return;
+        DrawNetLine(p9, p6, canvas);
+        DrawNetLine(p6, p3, canvas);
+        DrawNetLine(p3, p8, canvas);
+        DrawNetLine(p8, p9, canvas);
         break;
     case 4:
-        canvas.DrawLine(p5, p9, lineWidth);
-        canvas.DrawLine(p9, p8, lineWidth);
-        canvas.DrawLine(p8, p4, lineWidth);
-        canvas.DrawLine(p4, p5, lineWidth);
+        if (!IsInScreenLocation(p5, canvas.GetSize()) ||
+            !IsInScreenLocation(p9, canvas.GetSize()) ||
+            !IsInScreenLocation(p8, canvas.GetSize()) ||
+            !IsInScreenLocation(p4, canvas.GetSize()))
+            return;
+        DrawNetLine(p5, p9, canvas);
+        DrawNetLine(p9, p8, canvas);
+        DrawNetLine(p8, p4, canvas);
+        DrawNetLine(p4, p5, canvas);
         break;
     }
 }
 
-void NetToBallLine::renderShootingGame(CanvasWrapper canvas)
+void NetToBallLine::RenderShootingGame(CanvasWrapper canvas)
 {
     if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
     {
         NetToBallLine::StopTimer();
+        goalCount = 0;
         return;
     }
 
@@ -226,12 +247,17 @@ void NetToBallLine::renderShootingGame(CanvasWrapper canvas)
     if (ball.IsNull())
         return;
 
-    handleGameUI(canvas);
+    if (!timerIsRunning)
+    {
+        NetToBallLine::StartTimer();
+    }
+
+    HandleGameUI(canvas);
 
     DrawGoals(canvas, deciding_quadrant);
 }
 
-void NetToBallLine::handleGameUI(CanvasWrapper canvas)
+void NetToBallLine::HandleGameUI(CanvasWrapper canvas)
 {
     float elapsedTime = 0.0f;
 
@@ -251,4 +277,27 @@ void NetToBallLine::handleGameUI(CanvasWrapper canvas)
     canvas.DrawString(timerText, 2, 2);
     canvas.SetPosition(Vector2{1650, 450});
     canvas.DrawString("Goals: " + std::to_string(goalCount), 2, 2);
+}
+
+void NetToBallLine::DrawNetLine(Vector2 &p1, Vector2 &p2, CanvasWrapper &canvas)
+{
+    LinearColor colors;
+    colors.R = 255;
+    colors.G = 255;
+    colors.B = 0;
+    colors.A = 255;
+    canvas.SetColor(colors);
+
+    if (!IsInScreenLocation(p1, canvas.GetSize()) && !IsInScreenLocation(p2, canvas.GetSize()))
+        return;
+
+    // grab the car point vector2
+    Vector cameraLocation = gameWrapper->GetCamera().GetLocation();
+
+    //  middle of the points
+    Vector2 middle = (p1 + p2) / 2;
+
+    // draw line from the camera to the middle of the points
+    canvas.DrawLine(canvas.Project(cameraLocation), middle, 3);
+    canvas.DrawLine(p1, p2, 3);
 }
