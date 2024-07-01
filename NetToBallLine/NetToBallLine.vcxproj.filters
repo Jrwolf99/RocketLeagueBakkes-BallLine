@@ -72,6 +72,57 @@
     <ClCompile Include="fmt\src\os.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Line.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Chevron.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Circle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Circle2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Cone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Cube.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Cylinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Frustum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Matrix3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Plane.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Sphere.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Triangle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Objects\VisualCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Extra\RenderingAssistant.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Extra\RenderingMath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CinderBloccRenderingTools\Extra\WrapperStructsExtensions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NetToBallLine.h">
@@ -121,6 +172,57 @@
     </ClInclude>
     <ClInclude Include="version.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Chevron.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Circle.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Circle2D.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Cone.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Cube.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Cylinder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Frustum.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Grid.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Line.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Matrix3.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Plane.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Sphere.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Triangle.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Objects\VisualCamera.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Extra\RenderingAssistant.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Extra\RenderingMath.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CinderBloccRenderingTools\Extra\WrapperStructsExtensions.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

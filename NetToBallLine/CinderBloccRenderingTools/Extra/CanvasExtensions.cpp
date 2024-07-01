@@ -1,6 +1,8 @@
 #include "CanvasExtensions.h"
 #include "../Objects/Matrix3.h"
 #include "../Objects/Frustum.h"
+#include "../../pch.h"
+#include "pch.h"
 #include "bakkesmod/wrappers/canvaswrapper.h"
 #include "bakkesmod/wrappers/GameObject/CameraWrapper.h"
 

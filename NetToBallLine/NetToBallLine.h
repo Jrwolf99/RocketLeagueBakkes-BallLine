@@ -13,6 +13,8 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 {
 
 	std::shared_ptr<bool> shoot_enabled;
+	std::shared_ptr<bool> show_ball_to_net_line;
+	std::shared_ptr<bool> show_dot_on_ball;
 
 	virtual void onLoad();
 	virtual void onUnload();
@@ -45,8 +47,13 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 	void ScoreGoal(CanvasWrapper &canvas);
 	bool IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize);
 	void RenderShootingGame(CanvasWrapper canvas);
+	void RenderBallToNetLine(CanvasWrapper canvas);
+	void RenderDotOnBall(CanvasWrapper canvas);
 	void DrawGoals(CanvasWrapper &canvas, int quadrant);
 	void HandleGameUI(CanvasWrapper canvas);
-	bool IsBallColliding(const Vector& point, const Vector& topLeft, const Vector& bottomRight);
-    void DrawNetLine(Vector2 &p1, Vector2 &p2, CanvasWrapper &canvas);
+	bool IsBallColliding(const Vector &point, const Vector &topLeft, const Vector &bottomRight);
+	void DrawNetLine(Vector &v1, Vector &v2, CanvasWrapper &canvas, int num_segments = 50, bool curved = false);
+	Vector Lerp(const Vector& a, const Vector& b, float t);
+	void DrawPartialLine(Vector &v1, Vector &v2, CanvasWrapper &canvas, int num_segments, bool curved);
+	bool IsPointIntersectingBall(Vector &point, CanvasWrapper &canvas);
 };

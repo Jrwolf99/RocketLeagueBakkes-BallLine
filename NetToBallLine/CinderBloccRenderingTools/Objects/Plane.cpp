@@ -1,3 +1,5 @@
+#include "../../pch.h"
+#include "pch.h"
 #include "bakkesmod/wrappers/canvaswrapper.h"
 #include "Plane.h"
 #include "Matrix3.h"

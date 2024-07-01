@@ -91,6 +91,23 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CinderBloccRenderingTools\Extra\RenderingAssistant.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Extra\RenderingMath.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Extra\WrapperStructsExtensions.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Chevron.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Circle.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Circle2D.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Cone.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Cube.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Cylinder.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Frustum.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Grid.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Line.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Matrix3.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Plane.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Sphere.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\Triangle.cpp" />
+    <ClCompile Include="CinderBloccRenderingTools\Objects\VisualCamera.cpp" />
     <ClCompile Include="fmt\src\format.cc" />
     <ClCompile Include="fmt\src\os.cc" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -112,6 +129,23 @@
     <ClCompile Include="NetToBallLineGUI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CinderBloccRenderingTools\Extra\RenderingAssistant.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Extra\RenderingMath.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Extra\WrapperStructsExtensions.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Chevron.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Circle.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Circle2D.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Cone.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Cube.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Cylinder.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Frustum.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Grid.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Line.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Matrix3.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Plane.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Sphere.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\Triangle.h" />
+    <ClInclude Include="CinderBloccRenderingTools\Objects\VisualCamera.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imguivariouscontrols.h" />

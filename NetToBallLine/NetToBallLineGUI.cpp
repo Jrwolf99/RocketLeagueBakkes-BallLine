@@ -28,6 +28,18 @@ void NetToBallLine::RenderSettings()
 			goalCount = 0;
 		}
 	}
+
+	ImGui::TextUnformatted("Show  Ball to Net Line:");
+	if (ImGui::Checkbox("Show Ball to Net Line", show_ball_to_net_line.get()))
+	{
+		cvarManager->getCvar("show_ball_to_net_line").setValue(*show_ball_to_net_line);
+	}
+
+	ImGui::TextUnformatted("Show Dot on Ball:");
+	if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
+	{
+		cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
+	}
 }
 
 // Do ImGui rendering here

@@ -1,10 +1,21 @@
 #include <random>
-
+#include <cmath>
 #include "pch.h"
 #include "NetToBallLine.h"
 #include "bakkesmod/wrappers/canvaswrapper.h"
 #include "bakkesmod/wrappers/arraywrapper.h"
 #include "CinderBloccRenderingTools/Objects/Line.h"
+#include "CinderBloccRenderingTools/Objects/Frustum.h"
+#include "CinderBloccRenderingTools/Objects/Circle2D.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#ifndef NUM_SEGMENTS
+#define NUM_SEGMENTS 50
+#define NUM_SEGMENTSF 50.0f
+#endif
 
 BAKKESMOD_PLUGIN(NetToBallLine, "This is a simple plugin that draws a line from the net to the ball to assist in shooting practice", plugin_version, PLUGINTYPE_FREEPLAY)
 
@@ -40,14 +51,6 @@ void NetToBallLine::StopTimer()
 
 void NetToBallLine::ScoreGoal(CanvasWrapper &canvas)
 {
-
-    LinearColor colors;
-    colors.R = 0;
-    colors.G = 255;
-    colors.B = 0;
-    colors.A = 255;
-    canvas.SetColor(colors);
-
     if (previous_collision)
         return;
 
@@ -92,16 +95,29 @@ void NetToBallLine::onLoad()
     cvarManager->log("Plugin loaded!");
 
     shoot_enabled = std::make_shared<bool>(false);
+    show_ball_to_net_line = std::make_shared<bool>(false);
+    show_dot_on_ball = std::make_shared<bool>(false);
 
     cvarManager->registerCvar("shooting_enabled", "0", "Enable shooting practice")
         .bindTo(shoot_enabled);
 
+    cvarManager->registerCvar("show_ball_to_net_line", "0", "Show Ball to Net Line")
+        .bindTo(show_ball_to_net_line);
+
+    cvarManager->registerCvar("show_dot_on_ball", "0", "Show Dot on Ball")
+        .bindTo(show_dot_on_ball);
+
     gameWrapper->RegisterDrawable([this](CanvasWrapper canvas)
                                   {
-        if (*shoot_enabled)
-        {
-            RenderShootingGame(canvas);
-        } });
+                                      if (*shoot_enabled)
+                                      {
+                                          RenderShootingGame(canvas);
+                                      }
+
+                                      if (*show_ball_to_net_line)
+                                      {
+                                          RenderBallToNetLine(canvas);
+                                      } });
 }
 
 void NetToBallLine::onUnload()
@@ -110,12 +126,6 @@ void NetToBallLine::onUnload()
 
 void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
 {
-
-    // RT::Vector topLefttt(880, 5120, 600);
-    // RT::Vector topRighttt(-880, 5120, 600);
-
-    // Creating a line with thickness 3.0 using the specified vectors
-    // RT::Line thickLine(topLefttt, topRighttt, 10.0f);
 
     Vector topLeft(880, 5120, 600);
 
@@ -184,48 +194,30 @@ void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
     switch (quadrant)
     {
     case 1:
-        if (!IsInScreenLocation(p1, canvas.GetSize()) ||
-            !IsInScreenLocation(p5, canvas.GetSize()) ||
-            !IsInScreenLocation(p9, canvas.GetSize()) ||
-            !IsInScreenLocation(p7, canvas.GetSize()))
-            return;
-        DrawNetLine(p1, p5, canvas);
-        DrawNetLine(p5, p9, canvas);
-        DrawNetLine(p9, p7, canvas);
-        DrawNetLine(p7, p1, canvas);
+        DrawNetLine(topLeft, midLeft, canvas);
+        DrawNetLine(midLeft, midMid, canvas);
+        DrawNetLine(midMid, midTop, canvas);
+        DrawNetLine(midTop, topLeft, canvas);
         break;
     case 2:
-        if (!IsInScreenLocation(p7, canvas.GetSize()) ||
-            !IsInScreenLocation(p9, canvas.GetSize()) ||
-            !IsInScreenLocation(p6, canvas.GetSize()) ||
-            !IsInScreenLocation(p2, canvas.GetSize()))
-            return;
-        DrawNetLine(p7, p9, canvas);
-        DrawNetLine(p9, p6, canvas);
-        DrawNetLine(p6, p2, canvas);
-        DrawNetLine(p2, p7, canvas);
+        DrawNetLine(midTop, midMid, canvas);
+        DrawNetLine(midMid, midRight, canvas);
+        DrawNetLine(midRight, topRight, canvas);
+        DrawNetLine(topRight, midTop, canvas);
+
         break;
     case 3:
-        if (!IsInScreenLocation(p9, canvas.GetSize()) ||
-            !IsInScreenLocation(p8, canvas.GetSize()) ||
-            !IsInScreenLocation(p3, canvas.GetSize()) ||
-            !IsInScreenLocation(p6, canvas.GetSize()))
-            return;
-        DrawNetLine(p9, p6, canvas);
-        DrawNetLine(p6, p3, canvas);
-        DrawNetLine(p3, p8, canvas);
-        DrawNetLine(p8, p9, canvas);
+        DrawNetLine(midMid, midRight, canvas);
+        DrawNetLine(midRight, bottomRight, canvas);
+        DrawNetLine(bottomRight, midBottom, canvas);
+        DrawNetLine(midBottom, midMid, canvas);
+
         break;
     case 4:
-        if (!IsInScreenLocation(p5, canvas.GetSize()) ||
-            !IsInScreenLocation(p9, canvas.GetSize()) ||
-            !IsInScreenLocation(p8, canvas.GetSize()) ||
-            !IsInScreenLocation(p4, canvas.GetSize()))
-            return;
-        DrawNetLine(p5, p9, canvas);
-        DrawNetLine(p9, p8, canvas);
-        DrawNetLine(p8, p4, canvas);
-        DrawNetLine(p4, p5, canvas);
+        DrawNetLine(midLeft, midMid, canvas);
+        DrawNetLine(midMid, midBottom, canvas);
+        DrawNetLine(midBottom, bottomLeft, canvas);
+        DrawNetLine(bottomLeft, midLeft, canvas);
         break;
     }
 }
@@ -257,6 +249,64 @@ void NetToBallLine::RenderShootingGame(CanvasWrapper canvas)
     DrawGoals(canvas, deciding_quadrant);
 }
 
+void NetToBallLine::RenderBallToNetLine(CanvasWrapper canvas)
+{
+    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
+    {
+        return;
+    }
+
+    ServerWrapper game = gameWrapper->GetGameEventAsServer();
+    if (game.IsNull())
+        return;
+
+    BallWrapper ball = game.GetBall();
+    if (ball.IsNull())
+        return;
+
+    Vector ballLocation = game.GetBall().GetLocation();
+    Vector netLocation;
+
+    switch (deciding_quadrant)
+    {
+    case 1:
+        netLocation = Vector(440, 5120, 450);
+        break;
+    case 2:
+        netLocation = Vector(-440, 5120, 450);
+        break;
+    case 3:
+        netLocation = Vector(-440, 5120, 150);
+        break;
+    case 4:
+        netLocation = Vector(440, 5120, 150);
+        break;
+    default:
+        netLocation = Vector(0, 5120, 300);
+        break;
+    }
+
+    DrawNetLine(ballLocation, netLocation, canvas, 200, true);
+}
+
+void NetToBallLine::RenderDotOnBall(CanvasWrapper canvas)
+{
+    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
+    {
+        return;
+    }
+
+    ServerWrapper game = gameWrapper->GetGameEventAsServer();
+    if (game.IsNull())
+        return;
+
+    BallWrapper ball = game.GetBall();
+    if (ball.IsNull())
+        return;
+
+    Vector ballLocation = game.GetBall().GetLocation();
+}
+
 void NetToBallLine::HandleGameUI(CanvasWrapper canvas)
 {
     float elapsedTime = 0.0f;
@@ -267,7 +317,21 @@ void NetToBallLine::HandleGameUI(CanvasWrapper canvas)
         elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
     }
 
-    canvas.SetColor(255, 255, 0, 255);
+    LinearColor semiTransparentBlack;
+    semiTransparentBlack.R = 0;
+    semiTransparentBlack.G = 0;
+    semiTransparentBlack.B = 0;
+    semiTransparentBlack.A = 30;
+
+    Vector2 topLeft = Vector2{1630, 380};
+    Vector2 bottomLeft = Vector2{1630, 500};
+    Vector2 topRight = Vector2{1860, 380};
+    Vector2 bottomRight = Vector2{1860, 500};
+
+    canvas.FillTriangle(topLeft, bottomLeft, topRight, semiTransparentBlack);
+    canvas.FillTriangle(topRight, bottomLeft, bottomRight, semiTransparentBlack);
+
+    canvas.SetColor(255, 255, 255, 255);
 
     int elapsedTimeInt = static_cast<int>(elapsedTime);
     int minutes = elapsedTimeInt / 60;
@@ -279,25 +343,113 @@ void NetToBallLine::HandleGameUI(CanvasWrapper canvas)
     canvas.DrawString("Goals: " + std::to_string(goalCount), 2, 2);
 }
 
-void NetToBallLine::DrawNetLine(Vector2 &p1, Vector2 &p2, CanvasWrapper &canvas)
+void NetToBallLine::DrawNetLine(Vector &v1, Vector &v2, CanvasWrapper &canvas, int num_segs, bool curved)
 {
-    LinearColor colors;
-    colors.R = 255;
-    colors.G = 255;
-    colors.B = 0;
-    colors.A = 255;
-    canvas.SetColor(colors);
+    DrawPartialLine(v1, v2, canvas, num_segs, curved);
+    DrawPartialLine(v2, v1, canvas, num_segs, curved);
+}
 
-    if (!IsInScreenLocation(p1, canvas.GetSize()) && !IsInScreenLocation(p2, canvas.GetSize()))
-        return;
+Vector NetToBallLine::Lerp(const Vector &a, const Vector &b, float t)
+{
+    return a + (b - a) * t;
+}
 
-    // grab the car point vector2
+void NetToBallLine::DrawPartialLine(Vector &v1, Vector &v2, CanvasWrapper &canvas, int num_segs, bool curved)
+{
+
+    if (curved)
+    {
+        num_segs /= 2;
+    }
+    Vector(*all_segments)[2] = new Vector[num_segs][2];
+    Vector stopping_vector = v2;
+
+    Vector control_point = (v1 + v2) / 2;
+    control_point.Z += std::abs(v2.Z - v1.Z) * 0.9f; // Adjust Z to create an arch
+
+    for (int i = 0; i < num_segs; i++)
+    {
+        float t0 = i / static_cast<float>(num_segs);
+        float t1 = (i + 1) / static_cast<float>(num_segs);
+
+        // Calculate points on the Bezier curve
+        Vector p0 = Lerp(Lerp(v1, control_point, t0), Lerp(control_point, v2, t0), t0);
+        Vector p1 = Lerp(Lerp(v1, control_point, t1), Lerp(control_point, v2, t1), t1);
+
+        all_segments[i][0] = p0;
+        all_segments[i][1] = p1;
+    }
+
+    for (int i = 0; i < num_segs; i++)
+    {
+        if (IsPointIntersectingBall(all_segments[i][0], canvas))
+        {
+            stopping_vector = all_segments[i][0];
+            break;
+        }
+        else if (IsPointIntersectingBall(all_segments[i][1], canvas))
+        {
+            stopping_vector = all_segments[i][1];
+            break;
+        }
+    }
+
+    if (curved)
+    {
+        LinearColor colors;
+        colors.R = 168;
+        colors.G = 172;
+        colors.B = 186;
+        colors.A = 255;
+        canvas.SetColor(colors);
+
+        for (int i = 0; i < num_segs; i++)
+        {
+            RT::Line line(all_segments[i][0], all_segments[i][1], 3.0f);
+
+            RT::Frustum frustum(canvas, gameWrapper->GetCamera());
+            line.DrawWithinFrustum(canvas, frustum);
+        }
+    }
+    else
+    {
+        LinearColor colors;
+        colors.R = 255;
+        colors.G = 255;
+        colors.B = 255;
+        colors.A = 255;
+        canvas.SetColor(colors);
+        RT::Line line(v1, stopping_vector, 3.0f);
+
+        RT::Frustum frustum(canvas, gameWrapper->GetCamera());
+        line.DrawWithinFrustum(canvas, frustum);
+    }
+
+    delete[] all_segments;
+}
+// derived from the equation to find projected radius using the fov of the camera
+bool NetToBallLine::IsPointIntersectingBall(Vector &point, CanvasWrapper &canvas)
+{
+    Vector ballLocation = gameWrapper->GetGameEventAsServer().GetBall().GetLocation();
     Vector cameraLocation = gameWrapper->GetCamera().GetLocation();
 
-    //  middle of the points
-    Vector2 middle = (p1 + p2) / 2;
+    float distanceFromCamera = (ballLocation - cameraLocation).magnitude();
 
-    // draw line from the camera to the middle of the points
-    canvas.DrawLine(canvas.Project(cameraLocation), middle, 3);
-    canvas.DrawLine(p1, p2, 3);
+    float fovDegrees = static_cast<float>(gameWrapper->GetCamera().GetFOV());
+    float fovRadians = fovDegrees * (static_cast<float>(M_PI) / 180.0f);
+
+    float focalLength = 1920.0f / (2.0f * std::tan(fovRadians / 2.0f));
+
+    float ballRadius = gameWrapper->GetGameEventAsServer().GetBall().GetRadius();
+    float projectedRadius = (ballRadius * focalLength) / distanceFromCamera;
+
+    Vector2 point2D = canvas.Project(point);
+    Vector2 ballLocation2D = canvas.Project(ballLocation);
+    float distance = std::sqrt(std::pow(static_cast<float>(point2D.X - ballLocation2D.X), 2.0f) + std::pow(static_cast<float>(point2D.Y - ballLocation2D.Y), 2.0f));
+
+    // canvas.SetColor(255, 0, 0, 255);
+    // RT::Circle2D circle = RT ::Circle2D(Vector2F{static_cast<float>(ballLocation2D.X), static_cast<float>(ballLocation2D.Y)}, projectedRadius, 16, 3);
+    // circle.Draw(canvas);
+
+    return distance < projectedRadius;
 }
