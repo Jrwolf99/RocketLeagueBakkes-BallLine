@@ -35,11 +35,11 @@ void NetToBallLine::RenderSettings()
 		cvarManager->getCvar("show_ball_to_net_line").setValue(*show_ball_to_net_line);
 	}
 
-	ImGui::TextUnformatted("Show Dot on Ball:");
-	if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
-	{
-		cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
-	}
+	// ImGui::TextUnformatted("Show Dot on Ball:");
+	// if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
+	// {
+	// 	cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
+	// }
 }
 
 // Do ImGui rendering here
