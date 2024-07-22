@@ -17,7 +17,7 @@
 #define NUM_SEGMENTSF 50.0f
 #endif
 
-BAKKESMOD_PLUGIN(NetToBallLine, "This is a simple plugin that draws a line from the net to the ball to assist in shooting practice", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(NetToBallLine, "Shooting by Wolf", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -26,12 +26,7 @@ bool NetToBallLine::IsBallColliding(const Vector &point, const Vector &topLeft, 
     // the extra margin is there so that the ball doesn't have to be exactly at the goal to count as a goal
     bool is_collided = point.X <= topLeft.X + 50 && point.X >= bottomRight.X - 50 &&
                        point.Z <= topLeft.Z + 50 && point.Z >= bottomRight.Z - 50 &&
-                       point.Y <= topLeft.Y + 50 && point.Y >= bottomRight.Y - 50;
-
-    if (!is_collided)
-    {
-        previous_collision = false;
-    }
+                       point.Y <= topLeft.Y + 50 && point.Y >= bottomRight.Y - 20;
 
     return is_collided;
 }
@@ -51,23 +46,25 @@ void NetToBallLine::StopTimer()
 
 void NetToBallLine::ScoreGoal(CanvasWrapper &canvas)
 {
-    if (previous_collision)
+    if (goal_state != 0)
         return;
 
     goalCount++;
-    previous_collision = true;
     std::mt19937 gen(std::random_device{}());
     std::uniform_int_distribution<int> dist(1, 4);
 
-    if (dist(gen) == deciding_quadrant)
-    {
-        std::uniform_int_distribution<int> dist_second(1, 4);
-        deciding_quadrant = dist_second(gen);
-    }
-    else
-    {
+    goal_state = 1;
+    goal_current_color_state = goal_success_color;
+
+    // Schedule a function to change the quadrant after 4 seconds
+    gameWrapper->SetTimeout([this](GameWrapper *gw)
+                            {
+        std::mt19937 gen(std::random_device{}());
+        std::uniform_int_distribution<int> dist(1, 4);
         deciding_quadrant = dist(gen);
-    }
+        goal_state = 0;
+        //  in milliseconds
+        goal_current_color_state = goal_default_color; }, (*goal_reset_time) / 1000.0f);
 }
 
 bool NetToBallLine::IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize)
@@ -97,9 +94,22 @@ void NetToBallLine::onLoad()
     shoot_enabled = std::make_shared<bool>(false);
     show_ball_to_net_line = std::make_shared<bool>(false);
     show_dot_on_ball = std::make_shared<bool>(false);
+    show_scoreboard = std::make_shared<bool>(true);
+    scoreboard_show_background = std::make_shared<bool>(false);
+    goal_reset_time = std::make_shared<int>(400);
 
-    cvarManager->registerCvar("shooting_enabled", "0", "Enable shooting practice")
+    cvarManager->registerCvar("shooting_enabled", "1", "Enable shooting practice")
         .bindTo(shoot_enabled);
+
+    cvarManager->registerCvar("show_scoreboard", "1", "Show Scoreboard")
+        .bindTo(show_scoreboard);
+
+    cvarManager->registerCvar("scoreboard_color", "#000000CC", "color of overlay");
+    cvarManager->registerCvar("scoreboard_text_color", "#FFFFFF", "color of overlay text");
+    cvarManager->registerCvar("scoreboard_show_background", "0", "Show background of overlay");
+
+    cvarManager->registerCvar("goal_reset_time", "4000", "Time it takes for goal to reset after scoring (in milliseconds)")
+        .bindTo(goal_reset_time);
 
     cvarManager->registerCvar("show_ball_to_net_line", "0", "Show Ball to Net Line")
         .bindTo(show_ball_to_net_line);
@@ -108,11 +118,21 @@ void NetToBallLine::onLoad()
         .bindTo(show_dot_on_ball);
 
     gameWrapper->RegisterDrawable([this](CanvasWrapper canvas)
-                                  {
+                                  { 
                                       if (*shoot_enabled)
                                       {
                                           RenderShootingGame(canvas);
                                       }
+
+                                        if (*show_dot_on_ball)
+                                        {
+                                            RenderDotOnBall(canvas);
+                                        }
+
+                                        if (*shoot_enabled && *show_scoreboard)
+                                        {
+                                             HandleGameUI(canvas);
+                                        }
 
                                       if (*show_ball_to_net_line)
                                       {
@@ -244,8 +264,6 @@ void NetToBallLine::RenderShootingGame(CanvasWrapper canvas)
         NetToBallLine::StartTimer();
     }
 
-    HandleGameUI(canvas);
-
     DrawGoals(canvas, deciding_quadrant);
 }
 
@@ -317,21 +335,19 @@ void NetToBallLine::HandleGameUI(CanvasWrapper canvas)
         elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
     }
 
-    LinearColor semiTransparentBlack;
-    semiTransparentBlack.R = 0;
-    semiTransparentBlack.G = 0;
-    semiTransparentBlack.B = 0;
-    semiTransparentBlack.A = 30;
-
     Vector2 topLeft = Vector2{1630, 380};
     Vector2 bottomLeft = Vector2{1630, 500};
     Vector2 topRight = Vector2{1860, 380};
     Vector2 bottomRight = Vector2{1860, 500};
 
-    canvas.FillTriangle(topLeft, bottomLeft, topRight, semiTransparentBlack);
-    canvas.FillTriangle(topRight, bottomLeft, bottomRight, semiTransparentBlack);
+    if (*scoreboard_show_background)
+    {
+        LinearColor my_color = cvarManager->getCvar("scoreboard_color").getColorValue();
+        canvas.FillTriangle(topLeft, bottomLeft, topRight, my_color);
+        canvas.FillTriangle(topRight, bottomLeft, bottomRight, my_color);
+    }
 
-    canvas.SetColor(255, 255, 255, 255);
+    canvas.SetColor(cvarManager->getCvar("scoreboard_text_color").getColorValue());
 
     int elapsedTimeInt = static_cast<int>(elapsedTime);
     int minutes = elapsedTimeInt / 60;
@@ -396,12 +412,7 @@ void NetToBallLine::DrawPartialLine(Vector &v1, Vector &v2, CanvasWrapper &canva
 
     if (curved)
     {
-        LinearColor colors;
-        colors.R = 168;
-        colors.G = 172;
-        colors.B = 186;
-        colors.A = 255;
-        canvas.SetColor(colors);
+        canvas.SetColor(curved_line_color);
 
         for (int i = 0; i < num_segs; i++)
         {
@@ -413,12 +424,8 @@ void NetToBallLine::DrawPartialLine(Vector &v1, Vector &v2, CanvasWrapper &canva
     }
     else
     {
-        LinearColor colors;
-        colors.R = 255;
-        colors.G = 255;
-        colors.B = 255;
-        colors.A = 255;
-        canvas.SetColor(colors);
+
+        canvas.SetColor(goal_current_color_state);
         RT::Line line(v1, stopping_vector, 3.0f);
 
         RT::Frustum frustum(canvas, gameWrapper->GetCamera());
@@ -446,10 +453,6 @@ bool NetToBallLine::IsPointIntersectingBall(Vector &point, CanvasWrapper &canvas
     Vector2 point2D = canvas.Project(point);
     Vector2 ballLocation2D = canvas.Project(ballLocation);
     float distance = std::sqrt(std::pow(static_cast<float>(point2D.X - ballLocation2D.X), 2.0f) + std::pow(static_cast<float>(point2D.Y - ballLocation2D.Y), 2.0f));
-
-    // canvas.SetColor(255, 0, 0, 255);
-    // RT::Circle2D circle = RT ::Circle2D(Vector2F{static_cast<float>(ballLocation2D.X), static_cast<float>(ballLocation2D.Y)}, projectedRadius, 16, 3);
-    // circle.Draw(canvas);
 
     return distance < projectedRadius;
 }

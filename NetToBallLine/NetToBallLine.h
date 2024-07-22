@@ -15,6 +15,13 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 	std::shared_ptr<bool> shoot_enabled;
 	std::shared_ptr<bool> show_ball_to_net_line;
 	std::shared_ptr<bool> show_dot_on_ball;
+	std::shared_ptr<bool> show_scoreboard;
+	std::shared_ptr<bool> scoreboard_show_background;
+
+	std::shared_ptr<int> goal_reset_time;
+	std::shared_ptr<LinearColor> scoreboard_color;
+	std::shared_ptr<LinearColor> scoreboard_text_color;
+
 
 	virtual void onLoad();
 	virtual void onUnload();
@@ -25,14 +32,21 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 
 	bool isWindowOpen_ = false;
 	bool isMinimized_ = false;
-	std::string menuTitle_ = "NetToBallLine";
+	std::string menuTitle_ = "Shooting By Wolf";
 
 	std::chrono::steady_clock::time_point startTime;
 	bool timerIsRunning;
 
 	int goalCount = 0;
-	bool previous_collision = false;
+	int goal_state = 0; // 0 for default, 1 for success, 2 for fail
 	int deciding_quadrant = 1;
+
+
+	LinearColor goal_current_color_state = { 255, 255, 255, 255 };
+	LinearColor goal_default_color = { 255, 255, 255, 255 };
+	LinearColor goal_success_color = { 0, 255, 0, 255 };
+	LinearColor goal_fail_color = { 255, 0, 0, 255 };
+	LinearColor curved_line_color = { 168, 172, 186, 255 };
 
 	virtual void Render() override;
 	virtual std::string GetMenuName() override;

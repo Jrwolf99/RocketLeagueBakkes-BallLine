@@ -3,7 +3,7 @@
 
 std::string NetToBallLine::GetPluginName()
 {
-	return "NetToBallLine";
+	return "Shooting By Wolf";
 }
 
 void NetToBallLine::SetImGuiContext(uintptr_t ctx)
@@ -13,35 +13,82 @@ void NetToBallLine::SetImGuiContext(uintptr_t ctx)
 
 void NetToBallLine::RenderSettings()
 {
-	ImGui::TextUnformatted("Shooting Practice:");
-
-	if (ImGui::Checkbox("Enable Shooting Practice", shoot_enabled.get()))
+	if (ImGui::CollapsingHeader("Settings"))
 	{
-		cvarManager->getCvar("shooting_enabled").setValue(*shoot_enabled);
+		if (ImGui::Checkbox("Enable Shooting Practice", shoot_enabled.get()))
+		{
+			cvarManager->getCvar("shooting_enabled").setValue(*shoot_enabled);
+			if (*shoot_enabled)
+			{
+				NetToBallLine::StartTimer();
+			}
+			else
+			{
+				NetToBallLine::StopTimer();
+				goalCount = 0;
+			}
+		}
+		ImGui::Indent();
+
 		if (*shoot_enabled)
 		{
-			NetToBallLine::StartTimer();
+			ImGui::NewLine();
+			ImGui::Text("Goal Reset Time (ms):");
+			if (ImGui::SliderInt("", goal_reset_time.get(), 1000, 10000))
+			{
+				cvarManager->getCvar("goal_reset_time").setValue(*goal_reset_time);
+			}
+
+			ImGui::NewLine();
+
+			if (ImGui::Checkbox("Show Scoreboard", show_scoreboard.get()))
+			{
+				cvarManager->getCvar("show_scoreboard").setValue(*show_scoreboard);
+			}
+
+			if (*show_scoreboard)
+			{
+				ImGui::Indent();
+
+				if (ImGui::Checkbox("Show Scoreboard Background", scoreboard_show_background.get()))
+				{
+					cvarManager->getCvar("scoreboard_show_background").setValue(*scoreboard_show_background);
+				}
+				if (*scoreboard_show_background)
+				{
+					LinearColor backgroundColor = cvarManager->getCvar("scoreboard_color").getColorValue() / 255;
+					if (ImGui::ColorEdit4("Background Color", &backgroundColor.R))
+					{
+						cvarManager->getCvar("scoreboard_color").setValue(backgroundColor * 255);
+					}
+				}
+
+				LinearColor textColor = cvarManager->getCvar("scoreboard_text_color").getColorValue() / 255;
+				if (ImGui::ColorEdit4("Text Color", &textColor.R))
+				{
+					cvarManager->getCvar("scoreboard_text_color").setValue(textColor * 255);
+				}
+			}
 		}
-		else
+
+		ImGui::NewLine();
+		ImGui::NewLine();
+		ImGui::Unindent();
+
+		if (*shoot_enabled && ImGui::CollapsingHeader("Extra Features"))
 		{
-			NetToBallLine::StopTimer();
-			goalCount = 0;
+			if (ImGui::Checkbox("Show Ball to Net Line", show_ball_to_net_line.get()))
+			{
+				cvarManager->getCvar("show_ball_to_net_line").setValue(*show_ball_to_net_line);
+			}
+
+			if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
+			{
+				cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
+			}
 		}
 	}
-
-	ImGui::TextUnformatted("Show  Ball to Net Line:");
-	if (ImGui::Checkbox("Show Ball to Net Line", show_ball_to_net_line.get()))
-	{
-		cvarManager->getCvar("show_ball_to_net_line").setValue(*show_ball_to_net_line);
-	}
-
-	// ImGui::TextUnformatted("Show Dot on Ball:");
-	// if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
-	// {
-	// 	cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
-	// }
 }
-
 // Do ImGui rendering here
 void NetToBallLine::Render()
 {
