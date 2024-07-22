@@ -41,7 +41,6 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 	int goal_state = 0; // 0 for default, 1 for success, 2 for fail
 	int deciding_quadrant = 1;
 
-
 	LinearColor goal_current_color_state = { 255, 255, 255, 255 };
 	LinearColor goal_default_color = { 255, 255, 255, 255 };
 	LinearColor goal_success_color = { 0, 255, 0, 255 };
@@ -58,7 +57,7 @@ class NetToBallLine : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMo
 
 	void StartTimer();
 	void StopTimer();
-	void ScoreGoal(CanvasWrapper &canvas);
+	void ScoreGoal(CanvasWrapper &canvas, Vector2 goalLocatiion);
 	bool IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize);
 	void RenderShootingGame(CanvasWrapper canvas);
 	void RenderBallToNetLine(CanvasWrapper canvas);

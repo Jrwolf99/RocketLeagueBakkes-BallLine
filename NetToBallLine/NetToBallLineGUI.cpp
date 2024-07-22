@@ -41,6 +41,23 @@ void NetToBallLine::RenderSettings()
 
 			ImGui::NewLine();
 
+			if (*shoot_enabled && ImGui::CollapsingHeader("Show Only Certain Quadrants?"))
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					std::string whitelist_quadrant_name = "whitelist_quadrant_" + std::to_string(i + 1);
+					bool whitelist_quadrant = cvarManager->getCvar(whitelist_quadrant_name).getBoolValue();
+					std::string quadrant_names[] = {"Top Left", "Top Right", "Bottom Right", "Bottom Left"};
+
+					if (ImGui::Checkbox(quadrant_names[i].c_str(), &whitelist_quadrant))
+					{
+						cvarManager->getCvar(whitelist_quadrant_name).setValue(whitelist_quadrant);
+					}
+				}
+			}
+
+			ImGui::NewLine();
+
 			if (ImGui::Checkbox("Show Scoreboard", show_scoreboard.get()))
 			{
 				cvarManager->getCvar("show_scoreboard").setValue(*show_scoreboard);
@@ -69,27 +86,28 @@ void NetToBallLine::RenderSettings()
 					cvarManager->getCvar("scoreboard_text_color").setValue(textColor * 255);
 				}
 			}
-		}
 
-		ImGui::NewLine();
-		ImGui::NewLine();
-		ImGui::Unindent();
+			ImGui::NewLine();
+			ImGui::NewLine();
+			ImGui::Unindent();
 
-		if (*shoot_enabled && ImGui::CollapsingHeader("Extra Features"))
-		{
-			if (ImGui::Checkbox("Show Ball to Net Line", show_ball_to_net_line.get()))
+			if (*shoot_enabled && ImGui::CollapsingHeader("Extra Features"))
 			{
-				cvarManager->getCvar("show_ball_to_net_line").setValue(*show_ball_to_net_line);
-			}
+				if (ImGui::Checkbox("Show Ball to Net Line", show_ball_to_net_line.get()))
+				{
+					cvarManager->getCvar("show_ball_to_net_line").setValue(*show_ball_to_net_line);
+				}
 
-			if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
-			{
-				cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
+				// if (ImGui::Checkbox("Show Dot on Ball", show_dot_on_ball.get()))
+				// {
+				// 	cvarManager->getCvar("show_dot_on_ball").setValue(*show_dot_on_ball);
+				// }
 			}
 		}
 	}
+	ImGui::Unindent();
 }
-// Do ImGui rendering here
+
 void NetToBallLine::Render()
 {
 	if (!ImGui::Begin(menuTitle_.c_str(), &isWindowOpen_, ImGuiWindowFlags_None))
@@ -118,13 +136,6 @@ std::string NetToBallLine::GetMenuTitle()
 {
 	return menuTitle_;
 }
-
-// Don't call this yourself, BM will call this function with a pointer to the current ImGui context
-// this was a dupped piece of code?
-// void NetToBallLine::SetImGuiContext(uintptr_t ctx)
-//{
-//	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
-//}
 
 // Should events such as mouse clicks/key inputs be blocked so they won't reach the game
 bool NetToBallLine::ShouldBlockInput()

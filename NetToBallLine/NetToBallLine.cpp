@@ -26,7 +26,7 @@ bool NetToBallLine::IsBallColliding(const Vector &point, const Vector &topLeft, 
     // the extra margin is there so that the ball doesn't have to be exactly at the goal to count as a goal
     bool is_collided = point.X <= topLeft.X + 50 && point.X >= bottomRight.X - 50 &&
                        point.Z <= topLeft.Z + 50 && point.Z >= bottomRight.Z - 50 &&
-                       point.Y <= topLeft.Y + 50 && point.Y >= bottomRight.Y - 20;
+                       point.Y <= topLeft.Y + 100 && point.Y >= bottomRight.Y + 50;
 
     return is_collided;
 }
@@ -44,29 +44,51 @@ void NetToBallLine::StopTimer()
     startTime = std::chrono::steady_clock::now();
 }
 
-void NetToBallLine::ScoreGoal(CanvasWrapper &canvas)
+void NetToBallLine::ScoreGoal(CanvasWrapper &canvas, Vector2 goalLocation)
 {
+
     if (goal_state != 0)
         return;
 
     goalCount++;
     std::mt19937 gen(std::random_device{}());
-    std::uniform_int_distribution<int> dist(1, 4);
+
+    bool whitelist_quadrants[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        std::string whitelist_quadrant_name = "whitelist_quadrant_" + std::to_string(i + 1);
+        whitelist_quadrants[i] = cvarManager->getCvar(whitelist_quadrant_name).getBoolValue();
+    }
+
+    if (!whitelist_quadrants[0] && !whitelist_quadrants[1] && !whitelist_quadrants[2] && !whitelist_quadrants[3])
+    {
+        whitelist_quadrants[0] = true;
+        whitelist_quadrants[1] = true;
+        whitelist_quadrants[2] = true;
+        whitelist_quadrants[3] = true;
+    }
+
+    std::vector<int> available_quadrants;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (whitelist_quadrants[i])
+        {
+            available_quadrants.push_back(i + 1);
+        }
+    }
+
+    std::uniform_int_distribution<int> dist(0, available_quadrants.size() - 1);
 
     goal_state = 1;
     goal_current_color_state = goal_success_color;
 
-    // Schedule a function to change the quadrant after 4 seconds
-    gameWrapper->SetTimeout([this](GameWrapper *gw)
+    gameWrapper->SetTimeout([this, available_quadrants, gen, dist](GameWrapper *gw) mutable
                             {
-        std::mt19937 gen(std::random_device{}());
-        std::uniform_int_distribution<int> dist(1, 4);
-        deciding_quadrant = dist(gen);
+        int random_index = dist(gen);
+        deciding_quadrant = available_quadrants[random_index];
         goal_state = 0;
-        //  in milliseconds
         goal_current_color_state = goal_default_color; }, (*goal_reset_time) / 1000.0f);
 }
-
 bool NetToBallLine::IsInScreenLocation(Vector2 screenLocation, Vector2 canvasSize)
 {
 
@@ -117,8 +139,22 @@ void NetToBallLine::onLoad()
     cvarManager->registerCvar("show_dot_on_ball", "0", "Show Dot on Ball")
         .bindTo(show_dot_on_ball);
 
+    for (int i = 0; i < 4; i++)
+    {
+        std::string whitelist_quadrant_name = "whitelist_quadrant_" + std::to_string(i + 1);
+        cvarManager->registerCvar(whitelist_quadrant_name, "true", "Whitelist Quadrant " + std::to_string(i + 1));
+    }
+
     gameWrapper->RegisterDrawable([this](CanvasWrapper canvas)
                                   { 
+
+                                    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
+                                    {
+                                        NetToBallLine::StopTimer();
+                                        goalCount = 0;
+                                        return;
+                                    }
+                                    
                                       if (*shoot_enabled)
                                       {
                                           RenderShootingGame(canvas);
@@ -185,28 +221,28 @@ void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
     case 1:
         if (IsBallColliding(ballLocation, topLeft, midMid))
         {
-            ScoreGoal(canvas);
+            ScoreGoal(canvas, p1);
         }
         break;
     case 2:
 
         if (IsBallColliding(ballLocation, midTop, midRight))
         {
-            ScoreGoal(canvas);
+            ScoreGoal(canvas, p7);
         }
         break;
     case 3:
 
         if (IsBallColliding(ballLocation, midMid, bottomRight))
         {
-            ScoreGoal(canvas);
+            ScoreGoal(canvas, p9);
         }
         break;
     case 4:
         if (IsBallColliding(ballLocation, midLeft, midBottom))
 
         {
-            ScoreGoal(canvas);
+            ScoreGoal(canvas, p5);
         }
         break;
     }
@@ -224,14 +260,12 @@ void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
         DrawNetLine(midMid, midRight, canvas);
         DrawNetLine(midRight, topRight, canvas);
         DrawNetLine(topRight, midTop, canvas);
-
         break;
     case 3:
         DrawNetLine(midMid, midRight, canvas);
         DrawNetLine(midRight, bottomRight, canvas);
         DrawNetLine(bottomRight, midBottom, canvas);
         DrawNetLine(midBottom, midMid, canvas);
-
         break;
     case 4:
         DrawNetLine(midLeft, midMid, canvas);
@@ -240,16 +274,19 @@ void NetToBallLine::DrawGoals(CanvasWrapper &canvas, int quadrant)
         DrawNetLine(bottomLeft, midLeft, canvas);
         break;
     }
+
+          if (goal_current_color_state == goal_success_color)
+        {
+            canvas.SetColor(goal_success_color);
+
+            // bottom right of the screen
+            canvas.SetPosition(Vector2{1920 - 550, 1080 - 90});
+            canvas.DrawString("SCORE!", 5, 5);
+        }
 }
 
 void NetToBallLine::RenderShootingGame(CanvasWrapper canvas)
 {
-    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
-    {
-        NetToBallLine::StopTimer();
-        goalCount = 0;
-        return;
-    }
 
     ServerWrapper game = gameWrapper->GetGameEventAsServer();
     if (game.IsNull())
@@ -269,11 +306,6 @@ void NetToBallLine::RenderShootingGame(CanvasWrapper canvas)
 
 void NetToBallLine::RenderBallToNetLine(CanvasWrapper canvas)
 {
-    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
-    {
-        return;
-    }
-
     ServerWrapper game = gameWrapper->GetGameEventAsServer();
     if (game.IsNull())
         return;
@@ -307,13 +339,9 @@ void NetToBallLine::RenderBallToNetLine(CanvasWrapper canvas)
     DrawNetLine(ballLocation, netLocation, canvas, 200, true);
 }
 
+// todo: implement this
 void NetToBallLine::RenderDotOnBall(CanvasWrapper canvas)
 {
-    if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
-    {
-        return;
-    }
-
     ServerWrapper game = gameWrapper->GetGameEventAsServer();
     if (game.IsNull())
         return;
